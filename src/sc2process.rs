@@ -66,7 +66,7 @@ impl Process {
     pub fn new(options: ProcessOptions) -> Self {
         let ws_port = pick_unused_port().expect("Could not find a free port");
         let tempdir = TempDir::new().expect("Could not create temp dir");
-
+        debug!("{:?}", ws_port);
         debug!("Starting a new SC2 process");
 
         let process = options
@@ -97,6 +97,7 @@ impl Process {
     /// Connect the process websocket
     pub fn connect(&self) -> Option<Client<std::net::TcpStream>> {
         let url = format!("ws://127.0.0.1:{}/sc2api", self.ws_port);
+        println!("{:?}", url);
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), self.ws_port);
 
         debug!("Connecting to the process");

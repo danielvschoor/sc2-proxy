@@ -253,7 +253,8 @@ impl Supervisor {
                         // TODO: process reuse
                         self.add_client(p.extract_client());
                     }
-
+                    println!("{:?}", result);
+                    //debug!("Game result: {:?}", result);
                     info!("Game result: {:?}", result);
                 },
                 Err(msg) => {
@@ -268,7 +269,6 @@ impl Supervisor {
     #[must_use]
     pub fn update_remote(&mut self, remote: &mut Remote) -> RemoteUpdateStatus {
         use crate::remote_control::message::*;
-
         if let Some(msg) = remote.try_recv() {
             match msg {
                 Request::Quit => {

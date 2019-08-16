@@ -7,17 +7,25 @@ use std::io::ErrorKind::{ConnectionAborted, ConnectionReset};
 use websocket::result::WebSocketError;
 use websocket::OwnedMessage;
 
-use protobuf::parse_from_bytes;
-use protobuf::{Message, RepeatedField};
-use sc2_proto::sc2api::{Request, RequestJoinGame, Response, Status};
-
 use crate::config::Config;
 use crate::proxy::Client;
 use crate::sc2::{PlayerResult, Race};
 use crate::sc2process::Process;
+use protobuf::parse_from_bytes;
+use protobuf::{Message, RepeatedField};
+use sc2_proto::sc2api::{Request, RequestJoinGame, RequestSaveReplay, Response, ResponseSaveReplay, Status};
+use std::fs::File;
+use std::io::prelude::*;
 
 use super::messaging::{ChannelToGame, ToGameContent, ToPlayer};
-
+fn write_to_file(replaydata: Vec<u8>) -> std::io::Result<()> {
+    {
+        let mut file = File::create("test.SC2Replay")?;
+        let data = replaydata[0];
+        file.write(&[data])?;
+    }
+    Ok(())
+}
 /// Player process, connection and details
 pub struct Player {
     /// SC2 process for this player
@@ -149,7 +157,7 @@ impl Player {
     }
 
     /// Run game communication loop
-    /// Returns self it iff not disconnected, so that it can be returned to the playlist
+    /// Returns self it if not disconnected, so that it can be returned to the playlist
     #[must_use]
     pub fn run(mut self, config: Config, mut gamec: ChannelToGame) -> Option<Self> {
         while let Some(req) = self.client_get_request() {
@@ -160,7 +168,7 @@ impl Player {
                 self.client_respond(response.clone());
             }
 
-            let response = match self.sc2_query(req) {
+            let mut response = match self.sc2_query(req) {
                 Some(d) => d,
                 None => {
                     error!("SC2 unexpectedly closed the connection");
@@ -171,9 +179,16 @@ impl Player {
                 },
             };
             self.sc2_status = Some(response.get_status());
+            req.mut_save_replay();
+            if response.has_save_replay() {
+                let mut replaydata: ResponseSaveReplay = response.take_save_replay();
+                if replaydata.has_data() {
+                    let result: std::io::Result<()> = write_to_file(replaydata.take_data());
+                }
+            }
 
+            //
             // TODO: request refining, e.g. pathing gird fix
-
             self.client_respond(response.clone());
 
             if response.has_quit() {

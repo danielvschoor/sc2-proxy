@@ -15,7 +15,7 @@ fn default_base() -> PathBuf {
     if let Some(base_dir) = var_os("SC2_PROXY_BASE") {
         Path::new(&base_dir).to_path_buf()
     } else if cfg!(windows) {
-        Path::new("C:/Program Files (x86)/StarCraft II").to_path_buf()
+        Path::new("D:/New folder/StarCraft II").to_path_buf()
     } else if cfg!(target_os = "macos") {
         Path::new("/Applications/StarCraft II").to_path_buf()
     } else if cfg!(linux) {
@@ -145,6 +145,7 @@ pub fn cwd_dir() -> PathBuf {
 /// Directory containing replays
 pub fn replay_dir() -> PathBuf {
     base_dir().join(Path::new("Replays").to_path_buf())
+    
 }
 
 /// Directory containing map directories

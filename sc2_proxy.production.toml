@@ -5,7 +5,7 @@
 mode = "RemoteController"
 
 [match_defaults.game]
-map_name = "AcolyteLE.SC2Map"
+map_name = "Automaton LE"
 realtime = false
 
 [match_defaults.request_limits]
