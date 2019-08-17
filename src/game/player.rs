@@ -6,7 +6,8 @@ use std::io::ErrorKind::{ConnectionAborted, ConnectionReset};
 
 use websocket::result::WebSocketError;
 use websocket::OwnedMessage;
-
+use std::fs::File;
+use std::io::prelude::*;
 use crate::config::Config;
 use crate::proxy::Client;
 use crate::sc2::{PlayerResult, Race};
@@ -14,15 +15,14 @@ use crate::sc2process::Process;
 use protobuf::parse_from_bytes;
 use protobuf::{Message, RepeatedField};
 use sc2_proto::sc2api::{Request, RequestJoinGame, RequestSaveReplay, Response, ResponseSaveReplay, Status};
-use std::fs::File;
-use std::io::prelude::*;
+
 
 use super::messaging::{ChannelToGame, ToGameContent, ToPlayer};
-fn write_to_file(replaydata: Vec<u8>) -> std::io::Result<()> {
+fn write_to_file(replayData: &[u8]) -> std::io::Result<()> {
     {
         let mut file = File::create("test.SC2Replay")?;
-        let data = replaydata[0];
-        file.write(&[data])?;
+//        let data = replaydata[0];
+        file.write(replayData)?;
     }
     Ok(())
 }
@@ -147,7 +147,26 @@ impl Player {
             other => panic!("Expected binary message, got {:?}", other),
         }
     }
+fn proto_save_replay(&self) -> sc2_proto::sc2api::Request {
+        use sc2_proto::sc2api::{Request, RequestSaveReplay};
+        let mut r_save_replay = RequestSaveReplay::new();
+        let mut request = Request::new();
+        request.set_save_replay(r_save_replay);
+        request
+    }
 
+    pub fn save_replay(&mut self)->Option<()>{
+        let proto = self.proto_save_replay();
+        let mut response = self.sc2_query(proto)?;
+        if response.has_save_replay(){
+            let mut replayData = response.take_save_replay();
+            if replaydata.has_data() {
+                let replayVec: &[u8] = replayData.get_data();
+                let result: std::io::Result<()> = write_to_file(replayVec);
+            }
+        }
+        Some(())
+    }
     /// Send a request to SC2 and return the reponse
     /// Returns None if the connection is already closed
     #[must_use]
@@ -179,15 +198,6 @@ impl Player {
                 },
             };
             self.sc2_status = Some(response.get_status());
-            req.mut_save_replay();
-            if response.has_save_replay() {
-                let mut replaydata: ResponseSaveReplay = response.take_save_replay();
-                if replaydata.has_data() {
-                    let result: std::io::Result<()> = write_to_file(replaydata.take_data());
-                }
-            }
-
-            //
             // TODO: request refining, e.g. pathing gird fix
             self.client_respond(response.clone());
 
@@ -205,6 +215,8 @@ impl Player {
                 let obs = response.get_observation();
                 let obs_results = obs.get_player_result();
                 if !obs_results.is_empty() {
+                    debug!("Saving replay");
+                    self.save_replay();
                     // Game is over nad results available
                     let mut results_by_id: Vec<(u32, PlayerResult)> = obs_results
                         .iter()

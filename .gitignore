@@ -7,3 +7,12 @@
 
 # Misc
 /test_*.py
+.vs/ProjectSettings.json
+.vs/sc2-proxy/v15/.suo
+.vs/VSWorkspaceState.json
+.vs/slnx.sqlite
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/vcs.xml
+.idea/sc2-proxy.iml
+.idea/modules.xml
+.idea/misc.xml
