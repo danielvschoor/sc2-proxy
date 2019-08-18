@@ -4,25 +4,23 @@ use log::{debug, error, trace, warn};
 use std::fmt;
 use std::io::ErrorKind::{ConnectionAborted, ConnectionReset};
 
-use websocket::result::WebSocketError;
-use websocket::OwnedMessage;
-use std::fs::File;
-use std::io::prelude::*;
 use crate::config::Config;
 use crate::proxy::Client;
 use crate::sc2::{PlayerResult, Race};
 use crate::sc2process::Process;
 use protobuf::parse_from_bytes;
 use protobuf::{Message, RepeatedField};
-use sc2_proto::sc2api::{Request, RequestJoinGame, RequestSaveReplay, Response, ResponseSaveReplay, Status};
-
+use sc2_proto::sc2api::{Request, RequestJoinGame, Response, Status};
+use std::fs::File;
+use std::io::prelude::*;
+use websocket::result::WebSocketError;
+use websocket::OwnedMessage;
 
 use super::messaging::{ChannelToGame, ToGameContent, ToPlayer};
-fn write_to_file(replayData: &[u8]) -> std::io::Result<()> {
+fn write_to_file(replay_data: &[u8]) -> std::io::Result<()> {
     {
         let mut file = File::create("test.SC2Replay")?;
-//        let data = replaydata[0];
-        file.write(replayData)?;
+        file.write(replay_data)?;
     }
     Ok(())
 }
@@ -147,22 +145,22 @@ impl Player {
             other => panic!("Expected binary message, got {:?}", other),
         }
     }
-fn proto_save_replay(&self) -> sc2_proto::sc2api::Request {
-        use sc2_proto::sc2api::{Request, RequestSaveReplay};
-        let mut r_save_replay = RequestSaveReplay::new();
+    fn proto_save_replay(&self) -> sc2_proto::sc2api::Request {
+        use sc2_proto::sc2api::RequestSaveReplay;
+        let r_save_replay = RequestSaveReplay::new();
         let mut request = Request::new();
         request.set_save_replay(r_save_replay);
         request
     }
 
-    pub fn save_replay(&mut self)->Option<()>{
+    pub fn save_replay(&mut self) -> Option<()> {
         let proto = self.proto_save_replay();
         let mut response = self.sc2_query(proto)?;
-        if response.has_save_replay(){
-            let mut replayData = response.take_save_replay();
-            if replaydata.has_data() {
-                let replayVec: &[u8] = replayData.get_data();
-                let result: std::io::Result<()> = write_to_file(replayVec);
+        if response.has_save_replay() {
+            let replay_data = response.take_save_replay();
+            if replay_data.has_data() {
+                let replay_vec: &[u8] = replay_data.get_data();
+                let result: std::io::Result<()> = write_to_file(replay_vec);
             }
         }
         Some(())
@@ -187,7 +185,7 @@ fn proto_save_replay(&self) -> sc2_proto::sc2api::Request {
                 self.client_respond(response.clone());
             }
 
-            let mut response = match self.sc2_query(req) {
+            let response = match self.sc2_query(req) {
                 Some(d) => d,
                 None => {
                     error!("SC2 unexpectedly closed the connection");
