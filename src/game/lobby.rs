@@ -128,7 +128,7 @@ impl GameLobby {
     fn proto_join_game_participant(
         &self, portconfig: PortConfig, player_data: PlayerData,
     ) -> sc2_proto::sc2api::Request {
-        use sc2_proto::sc2api::{Request, RequestJoinGame};
+        use sc2_proto::sc2api::{Request};
 
         let mut r_join_game = RequestJoinGame::new();
         r_join_game.set_options(player_data.ifopts);
